@@ -1,0 +1,15 @@
+[package]
+name = "ungrammar-analysis"
+version = "0.1.0"
+edition = "2018"
+license = "MIT OR Apache-2.0"
+
+description = "Convenience queries for `ungrammar`"
+repository = "https://github.com/callbyname/ungrammar-analysis"
+keywords = ["ungrammar"]
+categories = ["development-tools"]
+
+exclude = ["/.github"]
+
+[dependencies]
+ungrammar = "1"
