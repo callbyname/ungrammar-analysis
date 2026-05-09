@@ -1,37 +1,4 @@
-//! Convenience queries for [`ungrammar`].
-//!
-//! `ungrammar` is deliberately small and does not expose an API for extracting higher-level
-//! structural information.
-//!
-//! This crate provides [`Analysis`], a companion view for name lookup ([`Node`]
-//! and [`Token`]) and rule characterisation ([`Symbol`] to [`Cardinality`]).
-//!
-//! ```
-//! use std::collections::HashMap;
-//! use ungrammar_analysis::{Analysis, Cardinality, Symbol};
-//!
-//! let grammar = "
-//!     A = B 'c' | 'c'
-//!     B = 'b'
-//! "
-//! .parse()
-//! .unwrap();
-//!
-//! let analysis = Analysis::from(&grammar);
-//!
-//! let node_a = analysis.node("A").unwrap();
-//! let node_b = analysis.node("B").unwrap();
-//! let token_c = analysis.token("c").unwrap();
-//!
-//! let symbols = analysis
-//!     .rule_analysis(node_a)
-//!     .unwrap()
-//!     .symbols()
-//!     .collect::<HashMap<_, _>>();
-//!
-//! assert_eq!(symbols[&node_b.into()], Cardinality::Optional);
-//! assert_eq!(symbols[&token_c.into()], Cardinality::One);
-//! ```
+#![doc = include_str!("../README.md")]
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
 #![deny(rustdoc::broken_intra_doc_links)]
@@ -42,7 +9,6 @@ use ungrammar::{Grammar, Node, Rule, Token};
 /// A precomputed view of a [`Grammar`].
 #[derive(Debug)]
 pub struct Analysis<'g> {
-    // NB: Node and Token are u16 handles
     nodes_by_name: HashMap<&'g str, Node>,
     tokens_by_name: HashMap<&'g str, Token>,
     rules: HashMap<Node, RuleAnalysis>,
@@ -179,6 +145,12 @@ impl RuleAnalysis {
         self.symbols
             .iter()
             .map(|(&symbol, &cardinality)| (symbol, cardinality))
+    }
+
+    /// Returns the cardinality of a symbol, or `None` if the symbol is not
+    /// mentioned by the rule.
+    pub fn cardinality(&self, symbol: Symbol) -> Option<Cardinality> {
+        self.symbols.get(&symbol).copied()
     }
 }
 
@@ -341,5 +313,22 @@ mod tests {
             rule_a.symbols().collect::<HashMap<_, _>>(),
             HashMap::from([(token_b.into(), Cardinality::Many)])
         )
+    }
+
+    #[test]
+    fn rule_analysis_cardinality_lookup() {
+        let grammar: Grammar = "A = 'b' 'c' | 'c'".parse().unwrap();
+        let analysis = Analysis::from(&grammar);
+        let node_a = analysis.node("A").unwrap();
+        let token_b = analysis.token("b").unwrap();
+        let token_c = analysis.token("c").unwrap();
+        let rule_a = analysis.rule_analysis(node_a).unwrap();
+
+        assert_eq!(rule_a.cardinality(Symbol::NonTerminal(node_a)), None);
+        assert_eq!(
+            rule_a.cardinality(token_b.into()),
+            Some(Cardinality::Optional)
+        );
+        assert_eq!(rule_a.cardinality(token_c.into()), Some(Cardinality::One));
     }
 }

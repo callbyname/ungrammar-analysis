@@ -35,5 +35,3 @@ assert_eq!(symbols[&node_b.into()], Cardinality::Optional);
 assert_eq!(symbols[&token_c.into()], Cardinality::One);
 ```
 
-
-
